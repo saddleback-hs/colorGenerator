@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio Color Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ui-bg:       #0f0f14;
+      --ui-surface:  #1a1a24;
+      --ui-card:     #21212e;
+      --ui-border:   rgba(255,255,255,0.08);
+      --ui-accent:   #e8c547;
+      --ui-text:     #f0f0f0;
+      --ui-muted:    #888;
+      --ui-radius:   12px;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--ui-bg);
+      color: var(--ui-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1a24 0%, #0f0f1a 100%);
+      border-bottom: 1px solid var(--ui-border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--ui-accent);
+      box-shadow: 0 0 10px var(--ui-accent);
+    }
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+    }
+    header span {
+      font-size: .78rem;
+      color: var(--ui-muted);
+      margin-left: auto;
+    }
+
+    /* ── Main layout ── */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 0;
+      max-width: 1300px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 24px;
+    }
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    /* ── Left column ── */
+    .left-col { padding-right: 28px; }
+
+    /* ── Upload zone ── */
+    #drop-zone {
+      border: 2px dashed rgba(232,197,71,.35);
+      border-radius: var(--ui-radius);
+      background: var(--ui-surface);
+      padding: 48px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    #drop-zone.drag-over {
+      border-color: var(--ui-accent);
+      background: rgba(232,197,71,.06);
+    }
+    #drop-zone .icon {
+      font-size: 2.8rem;
+      margin-bottom: 12px;
+    }
+    #drop-zone h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    #drop-zone p {
+      font-size: .82rem;
+      color: var(--ui-muted);
+      line-height: 1.5;
+    }
+    #drop-zone .browse-btn {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 9px 22px;
+      background: var(--ui-accent);
+      color: #111;
+      border-radius: 6px;
+      font-size: .84rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      font-family: 'Poppins', sans-serif;
+      transition: opacity .15s;
+    }
+    #drop-zone .browse-btn:hover { opacity: .85; }
+    #file-input { display: none; }
+
+    /* ── Image preview ── */
+    #image-preview-wrap {
+      display: none;
+      margin-top: 20px;
+      border-radius: var(--ui-radius);
+      overflow: hidden;
+      border: 1px solid var(--ui-border);
+      position: relative;
+    }
+    #image-preview-wrap img {
+      width: 100%;
+      max-height: 320px;
+      object-fit: cover;
+      display: block;
+    }
+    .change-img-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: rgba(0,0,0,.6);
+      border: 1px solid rgba(255,255,255,.15);
+      color: #fff;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: .75rem;
+      font-family: 'Poppins', sans-serif;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .change-img-btn:hover { background: rgba(0,0,0,.85); }
+
+    /* ── Extracted palette ── */
+    #palette-section { display: none; margin-top: 24px; }
+    #palette-section h3 {
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--ui-muted);
+      margin-bottom: 12px;
+    }
+    #swatch-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .swatch {
+      width: 52px; height: 52px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: transform .15s, border-color .15s;
+      position: relative;
+    }
+    .swatch:hover { transform: scale(1.1); }
+    .swatch.selected-accent { border-color: #fff; box-shadow: 0 0 12px rgba(255,255,255,.4); }
+    .swatch.selected-bg     { border-color: #5bc8f5; box-shadow: 0 0 12px rgba(91,200,245,.45); }
+    /* both selected at once */
+    .swatch.selected-accent.selected-bg {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px #5bc8f5, 0 0 14px rgba(91,200,245,.4);
+    }
+    .swatch-tip {
+      position: absolute;
+      bottom: -22px; left: 50%; transform: translateX(-50%);
+      font-size: .62rem;
+      white-space: nowrap;
+      color: var(--ui-muted);
+    }
+    /* tiny badge labels on selected swatches */
+    .swatch-badge {
+      position: absolute;
+      top: 3px; left: 3px;
+      font-size: .5rem;
+      font-weight: 700;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 3px;
+      letter-spacing: .03em;
+      pointer-events: none;
+    }
+    .badge-accent { background: rgba(255,255,255,.85); color: #111; }
+    .badge-bg     { background: rgba(91,200,245,.85);  color: #111; }
+
+    /* ── Accent picker hint ── */
+    .palette-hint {
+      margin-top: 30px;
+      font-size: .78rem;
+      color: var(--ui-muted);
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--ui-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .palette-hint strong { color: var(--ui-text); }
+
+    /* ── Rule info ── */
+    .rule-badges {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .rule-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 600;
+    }
+    .rule-60 { background: rgba(255,255,255,.06); color: #aaa; }
+    .rule-30 { background: rgba(100,180,255,.12); color: #7dc8ff; }
+    .rule-10 { background: rgba(232,197,71,.12); color: #e8c547; }
+
+    /* ── Right column ── */
+    .right-col {
+      border-left: 1px solid var(--ui-border);
+      padding-left: 28px;
+    }
+
+    /* ── Variable cards ── */
+    #vars-panel { display: none; }
+    .vars-section-title {
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--ui-muted);
+      margin-bottom: 10px;
+      margin-top: 4px;
+    }
+    .var-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--ui-surface);
+      margin-bottom: 6px;
+      border: 1px solid var(--ui-border);
+    }
+    .var-swatch {
+      width: 28px; height: 28px;
+      border-radius: 5px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .var-info { flex: 1; min-width: 0; }
+    .var-name {
+      font-size: .72rem;
+      font-family: 'Courier New', monospace;
+      color: #7dc8ff;
+    }
+    .var-label {
+      font-size: .67rem;
+      color: var(--ui-muted);
+    }
+    .var-hex {
+      font-family: 'Courier New', monospace;
+      font-size: .72rem;
+      color: var(--ui-muted);
+    }
+    .rule-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-60 { background: #555; }
+    .dot-30 { background: #7dc8ff; }
+    .dot-10 { background: #e8c547; }
+
+    /* ── Mini preview ── */
+    #mini-preview {
+      display: none;
+      border-radius: var(--ui-radius);
+      overflow: hidden;
+      border: 1px solid var(--ui-border);
+      margin-top: 20px;
+    }
+    .mp-hero {
+      padding: 24px 20px 20px;
+      text-align: center;
+    }
+    .mp-nav {
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid;
+      font-size: .7rem;
+    }
+    .mp-nav-name { font-weight: 600; font-size: .75rem; }
+    .mp-nav-links { display: flex; gap: 12px; }
+    .mp-hero-name {
+      font-family: 'Lora', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .mp-hero-sub {
+      font-size: .72rem;
+      margin-bottom: 12px;
+    }
+    .mp-btn {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 4px;
+      font-size: .7rem;
+      font-weight: 600;
+    }
+    .mp-section {
+      padding: 14px 16px;
+    }
+    .mp-section-title {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .mp-card {
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 6px;
+      border: 1px solid;
+      font-size: .67rem;
+      line-height: 1.4;
+    }
+
+    /* ── CSS output ── */
+    #css-output-wrap {
+      display: none;
+      margin-top: 20px;
+    }
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .output-header h3 {
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--ui-muted);
+    }
+    #copy-btn {
+      background: var(--ui-accent);
+      color: #111;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 14px;
+      font-size: .75rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: opacity .15s;
+    }
+    #copy-btn:hover { opacity: .85; }
+    #copy-btn.copied { background: #4caf50; color: #fff; }
+
+    #css-output {
+      background: #0a0a10;
+      border: 1px solid var(--ui-border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Courier New', monospace;
+      font-size: .72rem;
+      line-height: 1.7;
+      color: #c0c0c0;
+      white-space: pre;
+      overflow-x: auto;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+    .css-comment { color: #555; }
+    .css-var { color: #7dc8ff; }
+    .css-val { color: #e8c547; }
+    .css-js  { color: #b8e986; }
+
+    /* ── Empty state right col ── */
+    #empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    #empty-state .big-icon { font-size: 3rem; margin-bottom: 16px; opacity: .3; }
+    #empty-state p { font-size: .82rem; color: var(--ui-muted); line-height: 1.6; }
+
+    /* ── Loading ── */
+    #loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      gap: 12px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(232,197,71,.2);
+      border-top-color: var(--ui-accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { font-size: .82rem; color: var(--ui-muted); }
+
+    canvas { display: none; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+    /* ── Mode toggle button ── */
+    .mode-toggle {
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--ui-border);
+      color: var(--ui-text);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: .78rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: background .15s, color .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .mode-toggle:hover { background: rgba(255,255,255,.12); }
+
+    /* ── Light mode overrides (tool UI) ── */
+    body.light-mode {
+      --ui-bg:      #f2f2f5;
+      --ui-surface: #e8e8ee;
+      --ui-card:    #dddde6;
+      --ui-border:  rgba(0,0,0,0.10);
+      --ui-text:    #1a1a22;
+      --ui-muted:   #666;
+    }
+    body.light-mode header {
+      background: linear-gradient(135deg, #e4e4ef 0%, #ebebf5 100%);
+    }
+    body.light-mode .mode-toggle {
+      background: rgba(0,0,0,.05);
+    }
+    body.light-mode .mode-toggle:hover {
+      background: rgba(0,0,0,.10);
+    }
+    body.light-mode #css-output {
+      background: #f8f8fc;
+      color: #333;
+      border-color: rgba(0,0,0,.12);
+    }
+    body.light-mode .css-comment { color: #aaa; }
+    body.light-mode .css-var     { color: #0055bb; }
+    body.light-mode .css-val     { color: #b06000; }
+    body.light-mode .css-js      { color: #2a7a00; }
+    body.light-mode ::-webkit-scrollbar-thumb { background: #bbb; }
+    body.light-mode .dot-60 { background: #bbb; }
+
+    /* scheme-mode pill shown above mini-preview */
+    #scheme-mode-label {
+      display: none;
+      font-size: .7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+      width: fit-content;
+    }
+    #scheme-mode-label.dark-label  { background: rgba(255,255,255,.07); color: #888; }
+    #scheme-mode-label.light-label { background: rgba(0,0,0,.07);       color: #888; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-dot"></div>
+  <h1>Portfolio Color Generator</h1>
+  <span>Upload an image → get your CSS color scheme</span>
+  <button class="mode-toggle" id="mode-toggle" onclick="toggleMode()">☀️ Light Mode</button>
+</header>
+
+<main>
+  <!-- LEFT COLUMN -->
+  <div class="left-col">
+
+    <div id="drop-zone">
+      <div class="icon">🎨</div>
+      <h2>Upload Your Inspiration Image</h2>
+      <p>Drop any photo, artwork, or color reference here.<br>
+         The tool will extract its dominant colors and<br>
+         build a harmonious portfolio color scheme for you.</p>
+      <button class="browse-btn" onclick="document.getElementById('file-input').click()">Browse Image</button>
+      <input type="file" id="file-input" accept="image/*" />
+    </div>
+
+    <div id="image-preview-wrap">
+      <img id="image-preview" src="" alt="Uploaded image" />
+      <button class="change-img-btn" onclick="document.getElementById('file-input').click()">⟳ Change</button>
+    </div>
+
+    <div id="palette-section">
+      <h3>Extracted Colors — Click to set as Accent</h3>
+      <div id="swatch-row"></div>
+
+      <div class="palette-hint" style="margin-top:32px;">
+        <strong>How colors are assigned (60/30/10 rule):</strong><br><br>
+        <div class="rule-badges">
+          <span class="rule-badge rule-60">⬤ 60% — Backgrounds</span>
+          <span class="rule-badge rule-30">⬤ 30% — Borders &amp; Secondary</span>
+          <span class="rule-badge rule-10">⬤ 10% — Accent &amp; Particles</span>
+        </div>
+        <br>
+        <strong>Click</strong> a swatch → set <span style="color:#f0f0f0">Accent</span> <strong style="background:rgba(255,255,255,.8);color:#111;padding:0 3px;border-radius:2px;font-size:.7rem">A</strong><br><br>
+        <strong>Alt+Click</strong> (⌥ Mac) cycles through three Background states:<br>
+        <span style="color:#5bc8f5">1st click</span> → <strong style="background:rgba(91,200,245,.8);color:#111;padding:0 3px;border-radius:2px;font-size:.7rem">BG~</strong> <em>Tinted</em> — uses the hue, keeps bg dark/light<br>
+        <span style="color:#5bc8f5">2nd click</span> → <strong style="background:rgba(91,200,245,.8);color:#111;padding:0 3px;border-radius:2px;font-size:.7rem">BG</strong> &nbsp;<em>Exact</em> — uses the color as-is (e.g. solid yellow)<br>
+        <span style="color:#5bc8f5">3rd click</span> → unpinned, back to auto-detect<br><br>
+        Text and borders adjust automatically for contrast in all modes.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="right-col">
+
+    <div id="empty-state">
+      <div class="big-icon">🖼</div>
+      <p>Upload an image to the left and your<br>
+         custom CSS color scheme will appear here —<br>
+         ready to copy &amp; paste into your portfolio.</p>
+    </div>
+
+    <div id="loading">
+      <div class="spinner"></div>
+      <p>Analyzing colors…</p>
+    </div>
+
+    <div id="vars-panel">
+      <p class="vars-section-title">Color Assignments</p>
+      <div id="var-rows"></div>
+
+      <div id="scheme-mode-label"></div>
+      <div id="mini-preview"></div>
+
+      <div id="css-output-wrap">
+        <div class="output-header">
+          <h3>Copy into your portfolio</h3>
+          <button id="copy-btn" onclick="copyCSS()">📋 Copy All</button>
+        </div>
+        <div id="css-output"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<canvas id="work-canvas"></canvas>
+
+<script>
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let extractedPalette   = []; // [{hex, r, g, b, h, s, l}]
+let accentIndex        = 0;  // which swatch is the accent
+let bgIndex            = -1; // which swatch is pinned as background (-1 = auto)
+let bgExact            = false; // false = tinted (hue only), true = use color exactly as-is
+let portfolioLightMode = false; // generate dark (false) or light (true) portfolio scheme
+
+// ─────────────────────────────────────────────
+//  DARK / LIGHT TOGGLE
+// ─────────────────────────────────────────────
+function toggleMode() {
+  portfolioLightMode = !portfolioLightMode;
+  document.body.classList.toggle('light-mode', portfolioLightMode);
+  const btn = document.getElementById('mode-toggle');
+  btn.innerHTML = portfolioLightMode ? '🌙 Dark Mode' : '☀️ Light Mode';
+  if (extractedPalette.length) generateScheme();
+}
+
+// ─────────────────────────────────────────────
+//  DRAG & DROP / FILE INPUT
+// ─────────────────────────────────────────────
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadFile(file);
+});
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+function loadFile(file) {
+  const url = URL.createObjectURL(file);
+  const img = document.getElementById('image-preview');
+  img.onload = () => {
+    showLoading(true);
+    // small delay so spinner renders
+    setTimeout(() => processImage(img), 60);
+  };
+  img.src = url;
+  document.getElementById('image-preview-wrap').style.display = 'block';
+  document.getElementById('drop-zone').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────
+//  IMAGE → PALETTE EXTRACTION
+// ─────────────────────────────────────────────
+function processImage(img) {
+  const canvas = document.getElementById('work-canvas');
+  const ctx    = canvas.getContext('2d');
+
+  // Downsample for speed
+  const SIZE = 120;
+  canvas.width  = SIZE;
+  canvas.height = SIZE;
+  ctx.drawImage(img, 0, 0, SIZE, SIZE);
+
+  const data = ctx.getImageData(0, 0, SIZE, SIZE).data;
+  const pixels = [];
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+    if (a < 128) continue; // skip transparent
+    pixels.push([r, g, b]);
+  }
+
+  // K-means clustering for dominant colors
+  const NUM_COLORS = 10;
+  const palette = kMeans(pixels, NUM_COLORS);
+
+  // Convert to HSL and build objects
+  extractedPalette = palette.map(([r,g,b]) => {
+    const hex = rgbToHex(r, g, b);
+    const { h, s, l } = rgbToHsl(r, g, b);
+    return { hex, r, g, b, h, s, l };
+  });
+
+  // Sort by saturation desc (most vibrant first) so accent candidate is obvious
+  extractedPalette.sort((a, b) => b.s - a.s);
+
+  // Default accent = most saturated with reasonable luminance
+  accentIndex = extractedPalette.findIndex(c => c.s > 20 && c.l > 15 && c.l < 85);
+  if (accentIndex < 0) accentIndex = 0;
+  bgIndex = -1; bgExact = false; // reset manual bg pin on new image
+
+  showLoading(false);
+  renderPalette();
+  generateScheme();
+}
+
+// ─────────────────────────────────────────────
+//  K-MEANS
+// ─────────────────────────────────────────────
+function kMeans(pixels, k) {
+  // Pick initial centroids evenly spread
+  const step = Math.floor(pixels.length / k);
+  let centroids = [];
+  for (let i = 0; i < k; i++) centroids.push([...pixels[i * step]]);
+
+  let assignments = new Array(pixels.length).fill(0);
+  let changed = true;
+  let iters = 0;
+
+  while (changed && iters < 25) {
+    changed = false;
+    iters++;
+
+    // Assign pixels to nearest centroid
+    for (let i = 0; i < pixels.length; i++) {
+      let best = 0, bestDist = Infinity;
+      for (let j = 0; j < k; j++) {
+        const d = colorDist(pixels[i], centroids[j]);
+        if (d < bestDist) { bestDist = d; best = j; }
+      }
+      if (assignments[i] !== best) { assignments[i] = best; changed = true; }
+    }
+
+    // Recompute centroids
+    const sums  = Array.from({length: k}, () => [0,0,0]);
+    const counts = new Array(k).fill(0);
+    for (let i = 0; i < pixels.length; i++) {
+      const c = assignments[i];
+      sums[c][0] += pixels[i][0];
+      sums[c][1] += pixels[i][1];
+      sums[c][2] += pixels[i][2];
+      counts[c]++;
+    }
+    for (let j = 0; j < k; j++) {
+      if (counts[j] > 0) {
+        centroids[j] = [
+          Math.round(sums[j][0] / counts[j]),
+          Math.round(sums[j][1] / counts[j]),
+          Math.round(sums[j][2] / counts[j]),
+        ];
+      }
+    }
+  }
+
+  // Return centroids sorted by population
+  const pops = new Array(k).fill(0);
+  assignments.forEach(c => pops[c]++);
+  return centroids
+    .map((c, i) => ({c, p: pops[i]}))
+    .filter(x => x.p > 0)
+    .sort((a, b) => b.p - a.p)
+    .map(x => x.c);
+}
+
+function colorDist([r1,g1,b1], [r2,g2,b2]) {
+  return (r1-r2)**2 + (g1-g2)**2 + (b1-b2)**2;
+}
+
+// ─────────────────────────────────────────────
+//  COLOR UTILITIES
+// ─────────────────────────────────────────────
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h = 0, s = 0, l = (max+min)/2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g-b)/d + (g<b?6:0)) / 6; break;
+      case g: h = ((b-r)/d + 2) / 6; break;
+      case b: h = ((r-g)/d + 4) / 6; break;
+    }
+  }
+  return { h: Math.round(h*360), s: Math.round(s*100), l: Math.round(l*100) };
+}
+
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h/30) % 12;
+  const a = s * Math.min(l, 1-l);
+  const f = n => Math.round((l - a * Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n), 1)))) * 255);
+  return rgbToHex(f(0), f(8), f(4));
+}
+
+function hexLuminance(hex) {
+  const r = parseInt(hex.slice(1,3),16)/255;
+  const g = parseInt(hex.slice(3,5),16)/255;
+  const b = parseInt(hex.slice(5,7),16)/255;
+  return 0.2126*r + 0.7152*g + 0.0722*b;
+}
+
+// ─────────────────────────────────────────────
+//  RENDER EXTRACTED SWATCHES
+// ─────────────────────────────────────────────
+function renderPalette() {
+  const row = document.getElementById('swatch-row');
+  row.innerHTML = '';
+  extractedPalette.forEach((c, i) => {
+    const sw = document.createElement('div');
+    sw.style.background = c.hex;
+    sw.title = `Click → set Accent  |  Alt+Click → set Background\n${c.hex}  HSL(${c.h}° ${c.s}% ${c.l}%)`;
+    updateSwatchClasses(sw, i);
+
+    const tip = document.createElement('span');
+    tip.className = 'swatch-tip';
+    tip.textContent = c.hex;
+    sw.appendChild(tip);
+
+    sw.addEventListener('click', e => {
+      if (e.altKey || e.metaKey) {
+        // Alt/Option+click cycles: off → tinted → exact → off
+        if (bgIndex !== i) {
+          bgIndex = i; bgExact = false;        // different swatch → start at tinted
+        } else if (!bgExact) {
+          bgExact = true;                       // same swatch, was tinted → go exact
+        } else {
+          bgIndex = -1; bgExact = false;        // was exact → unpin
+        }
+      } else {
+        accentIndex = i;
+      }
+      document.querySelectorAll('.swatch').forEach((el, j) => updateSwatchClasses(el, j));
+      generateScheme();
+    });
+    row.appendChild(sw);
+  });
+  document.getElementById('palette-section').style.display = 'block';
+}
+
+function updateSwatchClasses(el, i) {
+  el.className = 'swatch'
+    + (i === accentIndex ? ' selected-accent' : '')
+    + (i === bgIndex     ? ' selected-bg'     : '');
+  // rebuild badges
+  el.querySelectorAll('.swatch-badge').forEach(b => b.remove());
+  if (i === accentIndex) {
+    const b = document.createElement('span');
+    b.className = 'swatch-badge badge-accent';
+    b.textContent = 'A';
+    el.appendChild(b);
+  }
+  if (i === bgIndex) {
+    const b = document.createElement('span');
+    b.className = 'swatch-badge badge-bg';
+    b.style.left = (i === accentIndex) ? '22px' : '3px';
+    b.textContent = bgExact ? 'BG' : 'BG~';
+    b.title = bgExact ? 'Exact color' : 'Tinted (hue only)';
+    el.appendChild(b);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  GENERATE THE SCHEME
+// ─────────────────────────────────────────────
+function generateScheme() {
+  if (!extractedPalette.length) return;
+
+  const accent = extractedPalette[accentIndex];
+
+  // Sort palette by luminance for role assignment
+  const byLum = [...extractedPalette].sort((a,b) => a.l - b.l);
+
+  // ── 10% Accent (same for both modes) ─────────
+  const accentHex      = accent.hex;
+  const accentHoverHex = hslToHex(accent.h, Math.min(accent.s + 10, 100), Math.min(accent.l + 10, 90));
+  const particleColorHex = accentHoverHex;
+
+  let bgPrimaryHex, bgSecondaryHex, bgHeroGlowHex, borderHex, textPrimaryHex, textMutedHex;
+
+  // ── Resolve background base ───────────────────
+  // If student manually pinned a BG swatch, use its hue/sat as the base
+  const bgPin = bgIndex >= 0 ? extractedPalette[bgIndex] : null;
+
+  if (!portfolioLightMode) {
+    // ── DARK MODE ────────────────────────────────
+    if (bgPin && bgExact) {
+      // Exact: use the swatch color directly, derive secondary/glow as close neighbors
+      bgPrimaryHex   = bgPin.hex;
+      bgSecondaryHex = hslToHex(bgPin.h, bgPin.s, Math.min(bgPin.l + 6, bgPin.l + 8));
+      bgHeroGlowHex  = hslToHex(bgPin.h, Math.min(bgPin.s + 8, 100), Math.min(bgPin.l + 10, bgPin.l + 12));
+      borderHex      = hslToHex(bgPin.h, Math.max(bgPin.s - 10, 0), bgPin.l + 20);
+      textPrimaryHex = hslToHex(bgPin.h, Math.min(bgPin.s * 0.2, 12), 93);
+      textMutedHex   = hslToHex(bgPin.h, Math.min(bgPin.s * 0.25, 15), 60);
+    } else {
+      let baseH, baseS, baseL;
+      if (bgPin) {
+        baseH = bgPin.h;
+        baseS = Math.min(bgPin.s * 0.55, 38);
+        baseL = Math.min(bgPin.l, 13);
+      } else {
+        const darkCandidates = byLum.filter(c => c.l < 25);
+        const auto = darkCandidates.length ? darkCandidates[0] : { h: accent.h, s: 10, l: 8 };
+        baseH = auto.h; baseS = auto.s * 0.5; baseL = Math.min(auto.l, 13);
+      }
+      bgPrimaryHex   = hslToHex(baseH, baseS, baseL);
+      bgSecondaryHex = hslToHex(baseH, baseS * 0.9, Math.min(baseL + 6, 20));
+      bgHeroGlowHex  = hslToHex(accent.h, Math.min(accent.s * 0.5, 40), Math.min(baseL + 9, 22));
+      borderHex      = hslToHex(baseH, Math.min(baseS * 0.5, 18), baseL + 18);
+      textPrimaryHex = hslToHex(accent.h, Math.min(accent.s * 0.15, 12), 92);
+      textMutedHex   = hslToHex(accent.h, Math.min(accent.s * 0.2, 15), 58);
+    }
+
+  } else {
+    // ── LIGHT MODE ───────────────────────────────
+    if (bgPin && bgExact) {
+      bgPrimaryHex   = bgPin.hex;
+      bgSecondaryHex = hslToHex(bgPin.h, bgPin.s, Math.max(bgPin.l - 6, bgPin.l - 8));
+      bgHeroGlowHex  = hslToHex(bgPin.h, Math.min(bgPin.s + 6, 100), Math.max(bgPin.l - 4, bgPin.l - 6));
+      borderHex      = hslToHex(bgPin.h, Math.max(bgPin.s - 10, 0), bgPin.l - 18);
+      textPrimaryHex = hslToHex(bgPin.h, Math.min(bgPin.s * 0.3, 16), 8);
+      textMutedHex   = hslToHex(bgPin.h, Math.min(bgPin.s * 0.2, 12), 40);
+    } else {
+      let baseH, baseS, baseL;
+      if (bgPin) {
+        baseH = bgPin.h;
+        baseS = Math.min(bgPin.s * 0.18, 14);
+        baseL = Math.max(bgPin.l, 93);
+      } else {
+        const lightCandidates = byLum.filter(c => c.l > 75);
+        const auto = lightCandidates.length
+          ? lightCandidates[lightCandidates.length - 1]
+          : { h: accent.h, s: 8, l: 97 };
+        baseH = auto.h; baseS = Math.min(auto.s * 0.15, 10); baseL = Math.max(auto.l, 93);
+      }
+      bgPrimaryHex   = hslToHex(baseH, baseS, baseL);
+      bgSecondaryHex = hslToHex(baseH, baseS * 0.9, Math.max(baseL - 5, 86));
+      bgHeroGlowHex  = hslToHex(accent.h, Math.min(accent.s * 0.3, 30), Math.max(baseL - 6, 84));
+      borderHex      = hslToHex(baseH, Math.min(baseS * 0.8, 14), baseL - 16);
+      textPrimaryHex = hslToHex(accent.h, Math.min(accent.s * 0.2, 14), 10);
+      textMutedHex   = hslToHex(accent.h, Math.min(accent.s * 0.15, 12), 42);
+    }
+  }
+
+  // update scheme-mode label
+  const modeLabel = document.getElementById('scheme-mode-label');
+  modeLabel.style.display = 'block';
+  modeLabel.textContent = portfolioLightMode ? '☀️ Light Portfolio' : '🌙 Dark Portfolio';
+  modeLabel.className = portfolioLightMode ? 'light-label' : 'dark-label';
+
+  const scheme = {
+    '--bg-primary':    bgPrimaryHex,
+    '--bg-secondary':  bgSecondaryHex,
+    '--bg-hero-glow':  bgHeroGlowHex,
+    '--accent':        accentHex,
+    '--accent-hover':  accentHoverHex,
+    '--text-primary':  textPrimaryHex,
+    '--text-muted':    textMutedHex,
+    '--border':        borderHex,
+    'particleColor':   particleColorHex,
+  };
+
+  renderVarPanel(scheme);
+  renderMiniPreview(scheme);
+  renderCSSOutput(scheme);
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('vars-panel').style.display  = 'block';
+  document.getElementById('mini-preview').style.display = 'block';
+  document.getElementById('css-output-wrap').style.display = 'block';
+}
+
+function synthesize(accent, targetL, targetS) {
+  const hex = hslToHex(accent.h, Math.max(0, targetS), Math.max(0, Math.min(targetL, 100)));
+  const hsl = rgbToHsl(...hex.slice(1).match(/../g).map(h=>parseInt(h,16)));
+  return { hex, ...hsl };
+}
+
+// ─────────────────────────────────────────────
+//  RENDER VARIABLE PANEL
+// ─────────────────────────────────────────────
+const VAR_META = {
+  '--bg-primary':   { label: 'Main background',       rule: '60' },
+  '--bg-secondary': { label: 'Cards & sections',       rule: '60' },
+  '--bg-hero-glow': { label: 'Hero radial gradient',   rule: '60' },
+  '--accent':       { label: 'Links, buttons, glow',   rule: '10' },
+  '--accent-hover': { label: 'Hover state accent',     rule: '10' },
+  '--text-primary': { label: 'Body & heading text',    rule: '30' },
+  '--text-muted':   { label: 'Captions & labels',      rule: '30' },
+  '--border':       { label: 'Dividers & card edges',  rule: '30' },
+  'particleColor':  { label: 'Particle system color',  rule: '10' },
+};
+
+function renderVarPanel(scheme) {
+  const container = document.getElementById('var-rows');
+  container.innerHTML = '';
+
+  let lastRule = '';
+  const ruleLabel = { '60': '60% · Backgrounds', '30': '30% · Text & Borders', '10': '10% · Accents & Particles' };
+
+  Object.entries(scheme).forEach(([name, hex]) => {
+    const meta = VAR_META[name];
+    if (meta.rule !== lastRule) {
+      lastRule = meta.rule;
+      const hdr = document.createElement('p');
+      hdr.className = 'vars-section-title';
+      hdr.style.marginTop = '14px';
+      hdr.textContent = ruleLabel[meta.rule];
+      container.appendChild(hdr);
+    }
+
+    const row = document.createElement('div');
+    row.className = 'var-row';
+
+    const dot = document.createElement('div');
+    dot.className = `rule-dot dot-${meta.rule}`;
+
+    const sw = document.createElement('div');
+    sw.className = 'var-swatch';
+    sw.style.background = hex;
+
+    const info = document.createElement('div');
+    info.className = 'var-info';
+    info.innerHTML = `<div class="var-name">${name}</div><div class="var-label">${meta.label}</div>`;
+
+    const hexEl = document.createElement('div');
+    hexEl.className = 'var-hex';
+    hexEl.textContent = hex;
+
+    row.append(dot, sw, info, hexEl);
+    container.appendChild(row);
+  });
+}
+
+// ─────────────────────────────────────────────
+//  MINI PREVIEW
+// ─────────────────────────────────────────────
+function renderMiniPreview(s) {
+  const el = document.getElementById('mini-preview');
+  const lum = hexLuminance(s['--accent']);
+  const accentText = lum > 0.35 ? '#111' : '#fff';
+
+  el.innerHTML = `
+    <div class="mp-nav" style="background:${s['--bg-secondary']};border-color:${s['--border']};color:${s['--text-primary']}">
+      <span class="mp-nav-name" style="color:${s['--accent']}">Your Name</span>
+      <span class="mp-nav-links" style="color:${s['--text-muted']}">
+        <span>About</span><span>Work</span><span>Contact</span>
+      </span>
+    </div>
+    <div class="mp-hero" style="background:radial-gradient(ellipse at center,${s['--bg-hero-glow']} 0%,${s['--bg-primary']} 70%)">
+      <div class="mp-hero-name" style="color:${s['--text-primary']}">Creative Portfolio</div>
+      <div class="mp-hero-sub" style="color:${s['--text-muted']}">Designer · Photographer · Artist</div>
+      <div class="mp-btn" style="background:${s['--accent']};color:${accentText}">View Work</div>
+    </div>
+    <div class="mp-section" style="background:${s['--bg-secondary']}">
+      <div class="mp-section-title" style="color:${s['--accent']}">Featured Projects</div>
+      <div class="mp-card" style="background:${s['--bg-primary']};border-color:${s['--border']};color:${s['--text-muted']}">
+        Project One — <span style="color:${s['--text-primary']}">Photography Series</span>
+      </div>
+      <div class="mp-card" style="background:${s['--bg-primary']};border-color:${s['--border']};color:${s['--text-muted']}">
+        Project Two — <span style="color:${s['--text-primary']}">Digital Art Collection</span>
+      </div>
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────
+//  CSS OUTPUT
+// ─────────────────────────────────────────────
+function renderCSSOutput(scheme) {
+  const el = document.getElementById('css-output');
+  const vars = Object.entries(scheme).filter(([k]) => k.startsWith('--'));
+  const js   = Object.entries(scheme).filter(([k]) => !k.startsWith('--'));
+
+  let html = `<span class="css-comment">/* ── Paste into your portfolio's :root block ── */</span>\n`;
+  html += `:root {\n`;
+  vars.forEach(([k, v]) => {
+    html += `  <span class="css-var">${k}</span>: <span class="css-val">${v}</span>;\n`;
+  });
+  html += `}\n\n`;
+  html += `<span class="css-comment">/* ── Paste over the matching JS variables ── */</span>\n`;
+  js.forEach(([k, v]) => {
+    html += `<span class="css-js">const ${k}</span> = <span class="css-val">'${v}'</span>;\n`;
+  });
+
+  el.innerHTML = html;
+
+  // Store plain text for copying
+  el.dataset.plain = `:root {\n`
+    + vars.map(([k,v]) => `  ${k}: ${v};`).join('\n')
+    + `\n}\n\n`
+    + js.map(([k,v]) => `const ${k} = '${v}';`).join('\n');
+}
+
+function copyCSS() {
+  const plain = document.getElementById('css-output').dataset.plain;
+  navigator.clipboard.writeText(plain).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy All'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ─────────────────────────────────────────────
+//  UI HELPERS
+// ─────────────────────────────────────────────
+function showLoading(on) {
+  document.getElementById('loading').style.display      = on ? 'flex' : 'none';
+  document.getElementById('empty-state').style.display  = on ? 'none' : 'flex';
+  if (on) {
+    document.getElementById('vars-panel').style.display = 'none';
+    document.getElementById('mini-preview').style.display = 'none';
+    document.getElementById('css-output-wrap').style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>
