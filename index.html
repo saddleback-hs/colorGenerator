@@ -123,10 +123,15 @@
     #image-preview-wrap {
       display: none;
       margin-top: 20px;
+      transition: box-shadow .2s, border-color .2s;
       border-radius: var(--ui-radius);
       overflow: hidden;
       border: 1px solid var(--ui-border);
       position: relative;
+    }
+    #image-preview-wrap.drag-over {
+      border-color: var(--ui-accent);
+      box-shadow: 0 0 0 3px rgba(232,197,71,.25);
     }
     #image-preview-wrap img {
       width: 100%;
@@ -376,7 +381,7 @@
     #copy-btn:hover { opacity: .85; }
     #copy-btn.copied { background: #4caf50; color: #fff; }
 
-    #css-output {
+    .css-output-block {
       background: #0a0a10;
       border: 1px solid var(--ui-border);
       border-radius: 8px;
@@ -387,13 +392,12 @@
       color: #c0c0c0;
       white-space: pre;
       overflow-x: auto;
-      max-height: 380px;
-      overflow-y: auto;
     }
     .css-comment { color: #555; }
     .css-var { color: #7dc8ff; }
     .css-val { color: #e8c547; }
     .css-js  { color: #b8e986; }
+    .output-section { margin-top: 14px; }
 
     /* ── Empty state right col ── */
     #empty-state {
@@ -472,7 +476,7 @@
     body.light-mode .mode-toggle:hover {
       background: rgba(0,0,0,.10);
     }
-    body.light-mode #css-output {
+    body.light-mode .css-output-block {
       background: #f8f8fc;
       color: #333;
       border-color: rgba(0,0,0,.12);
@@ -498,6 +502,71 @@
     }
     #scheme-mode-label.dark-label  { background: rgba(255,255,255,.07); color: #888; }
     #scheme-mode-label.light-label { background: rgba(0,0,0,.07);       color: #888; }
+
+    /* ── Presets strip ── */
+    #presets-section { margin-bottom: 22px; }
+    .presets-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .presets-header h3 {
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--ui-muted);
+    }
+    .presets-header span {
+      font-size: .72rem;
+      color: var(--ui-muted);
+    }
+    .presets-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+    }
+    .presets-scroll::-webkit-scrollbar { height: 4px; }
+    .presets-scroll::-webkit-scrollbar-track { background: transparent; }
+    .presets-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    body.light-mode .presets-scroll::-webkit-scrollbar-thumb { background: #bbb; }
+    .preset-card {
+      flex-shrink: 0;
+      width: 118px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--ui-border);
+      cursor: pointer;
+      transition: border-color .18s, transform .15s, box-shadow .15s;
+      background: var(--ui-surface);
+    }
+    .preset-card:hover {
+      border-color: var(--ui-accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(232,197,71,.2);
+    }
+    .preset-card.active {
+      border-color: var(--ui-accent);
+      box-shadow: 0 0 0 1px var(--ui-accent), 0 4px 12px rgba(232,197,71,.25);
+    }
+    .preset-card img {
+      width: 100%;
+      height: 78px;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+    .preset-card-name {
+      font-size: .61rem;
+      font-weight: 600;
+      padding: 4px 7px 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--ui-text);
+    }
   </style>
 </head>
 <body>
@@ -512,6 +581,17 @@
 <main>
   <!-- LEFT COLUMN -->
   <div class="left-col">
+
+    <!-- PRESETS STRIP -->
+    <div id="presets-section">
+      <div class="presets-header">
+        <h3>Example Presets</h3>
+        <span>Click any card to instantly load a color palette</span>
+      </div>
+      <div class="presets-scroll" id="presets-scroll">
+        <!-- built by JS -->
+      </div>
+    </div>
 
     <div id="drop-zone">
       <div class="icon">🎨</div>
@@ -574,11 +654,21 @@
       <div id="mini-preview"></div>
 
       <div id="css-output-wrap">
+        <!-- Section 1: :root variables -->
         <div class="output-header">
-          <h3>Copy into your portfolio</h3>
-          <button id="copy-btn" onclick="copyCSS()">📋 Copy All</button>
+          <h3>① Paste into your <code style="font-size:.7rem;color:#7dc8ff">:root { }</code> block</h3>
+          <button id="copy-root-btn" onclick="copyCSSSection('root')">📋 Copy CSS</button>
         </div>
-        <div id="css-output"></div>
+        <div id="css-output-root" class="css-output-block"></div>
+
+        <!-- Section 2: JS particleColor -->
+        <div class="output-section">
+          <div class="output-header">
+            <h3>② Paste over your <code style="font-size:.7rem;color:#b8e986">particleColor</code> variable</h3>
+            <button id="copy-js-btn" onclick="copyCSSSection('js')">📋 Copy JS</button>
+          </div>
+          <div id="css-output-js" class="css-output-block"></div>
+        </div>
       </div>
     </div>
 
@@ -614,6 +704,9 @@ function toggleMode() {
 const dropZone  = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 
+const previewWrap = document.getElementById('image-preview-wrap');
+
+// ── Drop zone (initial upload) ──
 dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', e => {
@@ -623,10 +716,23 @@ dropZone.addEventListener('drop', e => {
   if (file && file.type.startsWith('image/')) loadFile(file);
 });
 dropZone.addEventListener('click', () => fileInput.click());
+
+// ── Image preview (drag a new image onto the existing preview) ──
+previewWrap.addEventListener('dragover',  e => { e.preventDefault(); previewWrap.classList.add('drag-over'); });
+previewWrap.addEventListener('dragleave', e => { if (!previewWrap.contains(e.relatedTarget)) previewWrap.classList.remove('drag-over'); });
+previewWrap.addEventListener('drop', e => {
+  e.preventDefault();
+  previewWrap.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadFile(file);
+});
+
 fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
 
 function loadFile(file) {
   const url = URL.createObjectURL(file);
+  // Deselect any active preset card when a custom file is loaded
+  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
   const img = document.getElementById('image-preview');
   img.onload = () => {
     showLoading(true);
@@ -634,6 +740,61 @@ function loadFile(file) {
     setTimeout(() => processImage(img), 60);
   };
   img.src = url;
+  document.getElementById('image-preview-wrap').style.display = 'block';
+  document.getElementById('drop-zone').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────
+//  PRESETS
+// ─────────────────────────────────────────────
+const PRESETS = [
+  { name: 'Amalfi Summer',   file: 'preset-01.jpg' },
+  { name: 'Ocean Blues',     file: 'preset-02.jpg' },
+  { name: 'Fruit Mix',       file: 'preset-03.jpg' },
+  { name: 'Lavender Lemon',  file: 'preset-04.jpg' },
+  { name: 'Crimstone',       file: 'preset-05.jpg' },
+  { name: 'Desert Sunset',   file: 'preset-06.jpg' },
+  { name: 'Frosted Berry',   file: 'preset-07.jpg' },
+  { name: 'Tropical Fruits', file: 'preset-08.jpg' },
+  { name: 'Golden Beach',    file: 'preset-09.jpg' },
+  { name: 'Forest Greens',   file: 'preset-10.jpg' },
+  { name: 'Hibiscus Breeze', file: 'preset-11.jpg' },
+  { name: 'Ultra Violet',    file: 'preset-12.jpg' },
+  { name: 'Deep Ocean',      file: 'preset-13.jpg' },
+  { name: 'Citrus Orange',   file: 'preset-14.jpg' },
+  { name: 'Spring Pastels',  file: 'preset-15.jpg' },
+  { name: 'Floral Pastels',  file: 'preset-16.jpg' },
+  { name: 'Purple Scale',    file: 'preset-17.jpg' },
+  { name: 'Berry Reds',      file: 'preset-18.jpg' },
+  { name: 'Coastal Teals',   file: 'preset-19.jpg' },
+  { name: 'Watermelon Pop',  file: 'preset-20.jpg' },
+];
+
+(function buildPresets() {
+  const container = document.getElementById('presets-scroll');
+  PRESETS.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'preset-card';
+    card.title = p.name;
+    card.innerHTML =
+      `<img src="presets/${p.file}" alt="${p.name}" loading="lazy">` +
+      `<div class="preset-card-name">${p.name}</div>`;
+    card.addEventListener('click', () => loadPresetImage(`presets/${p.file}`, card));
+    container.appendChild(card);
+  });
+})();
+
+function loadPresetImage(src, cardEl) {
+  // Highlight active card
+  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+  if (cardEl) cardEl.classList.add('active');
+  // Load image directly by URL (no File object needed)
+  const img = document.getElementById('image-preview');
+  img.onload = () => {
+    showLoading(true);
+    setTimeout(() => processImage(img), 60);
+  };
+  img.src = src;
   document.getElementById('image-preview-wrap').style.display = 'block';
   document.getElementById('drop-zone').style.display = 'none';
 }
@@ -1052,37 +1213,56 @@ function renderMiniPreview(s) {
 //  CSS OUTPUT
 // ─────────────────────────────────────────────
 function renderCSSOutput(scheme) {
-  const el = document.getElementById('css-output');
-  const vars = Object.entries(scheme).filter(([k]) => k.startsWith('--'));
-  const js   = Object.entries(scheme).filter(([k]) => !k.startsWith('--'));
+  const rootEl = document.getElementById('css-output-root');
+  const jsEl   = document.getElementById('css-output-js');
+  const vars   = Object.entries(scheme).filter(([k]) => k.startsWith('--'));
+  const js     = Object.entries(scheme).filter(([k]) => !k.startsWith('--'));
 
-  let html = `<span class="css-comment">/* ── Paste into your portfolio's :root block ── */</span>\n`;
-  html += `:root {\n`;
+  // Pad variable names to the same width so comments align cleanly
+  const maxKeyLen = Math.max(...vars.map(([k]) => k.length));
+
+  // ── Section 1: :root block ───────────────────
+  let rootHtml  = `:root {\n`;
+  let rootPlain = `:root {\n`;
+
   vars.forEach(([k, v]) => {
-    html += `  <span class="css-var">${k}</span>: <span class="css-val">${v}</span>;\n`;
+    const meta    = VAR_META[k];
+    const comment = meta ? `/* ${meta.label} */` : '';
+    const padKey  = k.padEnd(maxKeyLen);
+    rootHtml  += `  <span class="css-var">${padKey}</span>: <span class="css-val">${v}</span>; <span class="css-comment">${comment}</span>\n`;
+    rootPlain += `  ${padKey}: ${v}; ${comment}\n`;
   });
-  html += `}\n\n`;
-  html += `<span class="css-comment">/* ── Paste over the matching JS variables ── */</span>\n`;
+
+  rootHtml  += `}`;
+  rootPlain += `}`;
+
+  rootEl.innerHTML   = rootHtml;
+  rootEl.dataset.plain = rootPlain;
+
+  // ── Section 2: JS particleColor ──────────────
+  let jsHtml  = '';
+  let jsPlain = '';
+
   js.forEach(([k, v]) => {
-    html += `<span class="css-js">const ${k}</span> = <span class="css-val">'${v}'</span>;\n`;
+    const meta    = VAR_META[k];
+    const comment = meta ? `// ${meta.label}` : '';
+    jsHtml  += `<span class="css-js">const ${k}</span> = <span class="css-val">'${v}'</span>; <span class="css-comment">${comment}</span>`;
+    jsPlain += `const ${k} = '${v}'; ${comment}`;
   });
 
-  el.innerHTML = html;
-
-  // Store plain text for copying
-  el.dataset.plain = `:root {\n`
-    + vars.map(([k,v]) => `  ${k}: ${v};`).join('\n')
-    + `\n}\n\n`
-    + js.map(([k,v]) => `const ${k} = '${v}';`).join('\n');
+  jsEl.innerHTML    = jsHtml;
+  jsEl.dataset.plain = jsPlain;
 }
 
-function copyCSS() {
-  const plain = document.getElementById('css-output').dataset.plain;
-  navigator.clipboard.writeText(plain).then(() => {
-    const btn = document.getElementById('copy-btn');
+function copyCSSSection(section) {
+  const el    = document.getElementById(`css-output-${section}`);
+  const btnId = `copy-${section}-btn`;
+  const origLabels = { root: '📋 Copy CSS', js: '📋 Copy JS' };
+  navigator.clipboard.writeText(el.dataset.plain).then(() => {
+    const btn = document.getElementById(btnId);
     btn.textContent = '✓ Copied!';
     btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '📋 Copy All'; btn.classList.remove('copied'); }, 2000);
+    setTimeout(() => { btn.textContent = origLabels[section]; btn.classList.remove('copied'); }, 2000);
   });
 }
 
