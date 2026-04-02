@@ -1235,8 +1235,8 @@ function renderCSSOutput(scheme) {
     rootPlain += `  ${padKey}: ${v}; ${comment}\n`;
   });
 
-  rootHtml  += `}`;
-  rootPlain += `}`;
+ // rootHtml  += `}`;
+ // rootPlain += `}`;
 
   rootEl.innerHTML   = rootHtml;
   rootEl.dataset.plain = rootPlain;
